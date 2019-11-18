@@ -1,8 +1,10 @@
-package main
+package cache
 
-import "fmt"
+import (
+	"testing"
+)
 
-func main() {
+func TestNewRing(t *testing.T) {
 	r := NewRing(&RingOptions{
 		Addrs: []string{
 			"redis://127.0.0.1:6380/0",
@@ -16,5 +18,5 @@ func main() {
 	// r.Set("b", []byte("haha"), 0)
 
 	d, _ := r.Get("aa")
-	fmt.Printf("data: %s\n", d)
+	t.Logf("data: %s", d)
 }

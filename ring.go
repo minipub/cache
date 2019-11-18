@@ -1,4 +1,4 @@
-package main
+package cache
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/kakiezhang/fgocache/hashring"
+	"github.com/minipub/cache/hashring"
 )
 
 const (
