@@ -54,7 +54,7 @@ func (opt *RingOptions) init() {
 	}
 
 	if opt.MaxActive == 0 {
-		opt.MaxActive = 500
+		opt.MaxActive = 50
 	}
 
 	if opt.MaxIdle == 0 {
@@ -271,12 +271,8 @@ func (r *Ring) Set(key string, value interface{}, expiry int) (err error) {
 	}
 
 	if err != nil {
-		v := data.(string)
-		if len(v) > 15 {
-			v = v[0:12] + "..."
-		}
 		return fmt.Errorf(
-			"error setting key %s to %s: %v", key, v, err)
+			"error setting key %s to %v: %v", key, data, err)
 	}
 	return err
 }
