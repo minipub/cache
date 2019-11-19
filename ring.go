@@ -3,20 +3,11 @@ package cache
 import (
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/minipub/cache/hashring"
-)
-
-const (
-	scheme = "redis://"
-	colon  = ":"
-
-	defaultPort = 6379
 )
 
 type Ring struct {
@@ -28,28 +19,25 @@ type Ring struct {
 }
 
 type RingOptions struct {
-	Addrs       []string
-	Nodes       map[string]*RingNode
-	Weights     map[string]int
+	Addrs       []string // address may with weight
 	MaxIdle     int
 	MaxActive   int
 	IdleTimeout time.Duration
 	Marshal     string
-}
 
-type RingNode struct {
-	server   string
-	password string
-	database int
-	weight   int
+	nodes         map[string]*RingNode
+	weights       map[string]int
+	addrsNoWeight []string // address without weight
 }
 
 func (opt *RingOptions) init() {
 	for _, addr := range opt.Addrs {
 		node := getRingNode(addr)
-		opt.Nodes[addr] = node
+		// fmt.Printf("addr: %s, node: %v\n", addr, node)
+		opt.nodes[addr] = node
+		opt.addrsNoWeight = append(opt.addrsNoWeight, node.addr)
 		if node.weight > 0 {
-			opt.Weights[addr] = node.weight
+			opt.weights[addr] = node.weight
 		}
 	}
 
@@ -66,80 +54,9 @@ func (opt *RingOptions) init() {
 	}
 }
 
-func getRingNode(addr string) *RingNode {
-	if !strings.HasPrefix(addr, scheme) {
-		panic("format error")
-	}
-
-	var arr []string
-	var url string
-	var db int
-	var err error
-
-	arr = strings.Split(addr[len(scheme):], "/")
-	if len(arr) == 2 {
-		url = arr[0]
-		db, err = strconv.Atoi(arr[1])
-		if err != nil {
-			panic("db must be integer")
-		}
-	} else if len(arr) == 1 {
-		url = arr[0]
-	} else {
-		panic("mm")
-	}
-
-	var url2 string
-	var weight int
-
-	arr = strings.Split(url, ",")
-	if len(arr) == 2 {
-		url2 = arr[0]
-		weight, err = strconv.Atoi(arr[1])
-		if err != nil {
-			panic("weight must be integer")
-		}
-	} else if len(arr) == 1 {
-		url2 = arr[0]
-	} else {
-		panic("mm")
-	}
-
-	var hostport, passwd string
-
-	arr = strings.Split(url2, "@")
-	if len(arr) == 2 {
-		passwd, hostport = arr[0], arr[1]
-		if !strings.HasPrefix(passwd, colon) {
-			panic("hh")
-		}
-		passwd = passwd[len(colon):]
-	} else if len(arr) == 1 {
-		hostport = arr[0]
-	} else {
-		panic("nn")
-	}
-
-	arr = strings.Split(hostport, colon)
-	if len(arr) == 2 {
-		// do nothing
-	} else if len(arr) == 1 {
-		hostport = fmt.Sprintf("%s%s%d", arr[0], colon, defaultPort)
-	} else {
-		panic("nn")
-	}
-
-	return &RingNode{
-		server:   hostport,
-		password: passwd,
-		database: db,
-		weight:   weight,
-	}
-}
-
 func NewRing(opt *RingOptions) *Ring {
-	opt.Nodes = make(map[string]*RingNode)
-	opt.Weights = make(map[string]int)
+	opt.nodes = make(map[string]*RingNode)
+	opt.weights = make(map[string]int)
 	opt.init()
 
 	var mm marshalModule
@@ -152,10 +69,10 @@ func NewRing(opt *RingOptions) *Ring {
 	}
 
 	var hash *hashring.HashRing
-	if len(opt.Weights) > 0 {
-		hash = hashring.NewWithWeights(opt.Weights)
+	if len(opt.weights) > 0 {
+		hash = hashring.NewWithWeights(opt.weights)
 	} else {
-		hash = hashring.New(opt.Addrs)
+		hash = hashring.New(opt.addrsNoWeight)
 	}
 
 	r := &Ring{
@@ -165,7 +82,7 @@ func NewRing(opt *RingOptions) *Ring {
 		marshal: mm,
 	}
 
-	for addr, node := range opt.Nodes {
+	for addr, node := range opt.nodes {
 		r.shards[addr] = r.getRedisPool(node.server, node.password, node.database)
 	}
 
