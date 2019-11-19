@@ -33,7 +33,6 @@ type RingOptions struct {
 func (opt *RingOptions) init() {
 	for _, addr := range opt.Addrs {
 		node := getRingNode(addr)
-		// fmt.Printf("addr: %s, node: %v\n", addr, node)
 		opt.nodes[addr] = node
 		opt.addrsNoWeight = append(opt.addrsNoWeight, node.addr)
 		if node.weight > 0 {
