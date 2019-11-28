@@ -70,3 +70,23 @@ func TestGetSetRace(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestNewRingPanic(t *testing.T) {
+	r := NewRing(&RingOptions{
+		Addrs: []string{
+			"127.0.0.1:6380/0",
+			"127.0.0.1:6380/1",
+		},
+		Marshal: "plain",
+	})
+	defer func() {
+		if r != nil {
+			r.Close()
+		}
+	}()
+
+	r.Set("aa", "haha", 0)
+
+	// d, _ := r.Get("aa")
+	// t.Logf("data: %s", d)
+}

@@ -53,7 +53,13 @@ func (opt *RingOptions) init() {
 	}
 }
 
-func NewRing(opt *RingOptions) *Ring {
+func NewRing(opt *RingOptions) (r *Ring) {
+	defer func() {
+		if p := recover(); p != nil {
+			fmt.Println(p)
+		}
+	}()
+
 	opt.nodes = make(map[string]*RingNode)
 	opt.weights = make(map[string]int)
 	opt.init()
@@ -74,7 +80,7 @@ func NewRing(opt *RingOptions) *Ring {
 		hash = hashring.New(opt.addrsNoWeight)
 	}
 
-	r := &Ring{
+	r = &Ring{
 		opt:     opt,
 		hash:    hash,
 		shards:  make(map[string]*redis.Pool),
