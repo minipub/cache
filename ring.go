@@ -220,3 +220,55 @@ func (r *Ring) Delete(key string) error {
 	_, err := conn.Do("DEL", key)
 	return err
 }
+
+func (r *Ring) Incr(key string) (int64, error) {
+	pool := r.keyToPool(key)
+	conn := pool.Get()
+	defer conn.Close()
+
+	value, err := conn.Do("INCR", key)
+	if err != nil {
+		return -1, fmt.Errorf(
+			"error incr key %s: %v", key, err)
+	}
+	return value.(int64), err
+}
+
+func (r *Ring) IncrBy(key, num string) (int64, error) {
+	pool := r.keyToPool(key)
+	conn := pool.Get()
+	defer conn.Close()
+
+	value, err := conn.Do("INCRBY", key, num)
+	if err != nil {
+		return -1, fmt.Errorf(
+			"error incrby key %s increment %s: %v", key, num, err)
+	}
+	return value.(int64), err
+}
+
+func (r *Ring) Decr(key string) (int64, error) {
+	pool := r.keyToPool(key)
+	conn := pool.Get()
+	defer conn.Close()
+
+	value, err := conn.Do("DECR", key)
+	if err != nil {
+		return -1, fmt.Errorf(
+			"error decr key %s: %v", key, err)
+	}
+	return value.(int64), err
+}
+
+func (r *Ring) DecrBy(key, num string) (int64, error) {
+	pool := r.keyToPool(key)
+	conn := pool.Get()
+	defer conn.Close()
+
+	value, err := conn.Do("DECRBY", key, num)
+	if err != nil {
+		return -1, fmt.Errorf(
+			"error decrby key %s decrement %s: %v", key, num, err)
+	}
+	return value.(int64), err
+}

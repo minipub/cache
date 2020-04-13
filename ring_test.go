@@ -71,6 +71,38 @@ func TestGetSetRace(t *testing.T) {
 	wg.Wait()
 }
 
+func TestNewRingIncr(t *testing.T) {
+	r := NewRing(&RingOptions{
+		Addrs: []string{
+			"redis://127.0.0.1:6380/1",
+		},
+		Marshal: "plain",
+	})
+	defer r.Close()
+
+	var value int64
+	value, _ = r.Incr("aa")
+	t.Log(value)
+	// value, _ = r.IncrBy("aa", "3")
+	// t.Log(value)
+}
+
+func TestNewRingDecr(t *testing.T) {
+	r := NewRing(&RingOptions{
+		Addrs: []string{
+			"redis://127.0.0.1:6380/1",
+		},
+		Marshal: "plain",
+	})
+	defer r.Close()
+
+	var value int64
+	// value, _ = r.Decr("aa")
+	// t.Log(value)
+	value, _ = r.DecrBy("aa", "3")
+	t.Log(value)
+}
+
 func TestNewRingPanic(t *testing.T) {
 	r := NewRing(&RingOptions{
 		Addrs: []string{
