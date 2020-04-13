@@ -221,7 +221,7 @@ func (r *Ring) Delete(key string) error {
 	return err
 }
 
-func (r *Ring) Incr(key string) (int64, error) {
+func (r *Ring) Incr(key string, expiry int) (int64, error) {
 	pool := r.keyToPool(key)
 	conn := pool.Get()
 	defer conn.Close()
@@ -231,10 +231,17 @@ func (r *Ring) Incr(key string) (int64, error) {
 		return -1, fmt.Errorf(
 			"error incr key %s: %v", key, err)
 	}
-	return value.(int64), err
+	data := value.(int64)
+
+	if expiry > 0 {
+		if _, err := conn.Do("EXPIRE", key, expiry); err != nil {
+			log.Printf("error expire key %s: %v", key, err)
+		}
+	}
+	return data, nil
 }
 
-func (r *Ring) IncrBy(key, num string) (int64, error) {
+func (r *Ring) IncrBy(key, num string, expiry int) (int64, error) {
 	pool := r.keyToPool(key)
 	conn := pool.Get()
 	defer conn.Close()
@@ -244,10 +251,17 @@ func (r *Ring) IncrBy(key, num string) (int64, error) {
 		return -1, fmt.Errorf(
 			"error incrby key %s increment %s: %v", key, num, err)
 	}
-	return value.(int64), err
+	data := value.(int64)
+
+	if expiry > 0 {
+		if _, err := conn.Do("EXPIRE", key, expiry); err != nil {
+			log.Printf("error expire key %s: %v", key, err)
+		}
+	}
+	return data, nil
 }
 
-func (r *Ring) Decr(key string) (int64, error) {
+func (r *Ring) Decr(key string, expiry int) (int64, error) {
 	pool := r.keyToPool(key)
 	conn := pool.Get()
 	defer conn.Close()
@@ -257,10 +271,17 @@ func (r *Ring) Decr(key string) (int64, error) {
 		return -1, fmt.Errorf(
 			"error decr key %s: %v", key, err)
 	}
-	return value.(int64), err
+	data := value.(int64)
+
+	if expiry > 0 {
+		if _, err := conn.Do("EXPIRE", key, expiry); err != nil {
+			log.Printf("error expire key %s: %v", key, err)
+		}
+	}
+	return data, nil
 }
 
-func (r *Ring) DecrBy(key, num string) (int64, error) {
+func (r *Ring) DecrBy(key, num string, expiry int) (int64, error) {
 	pool := r.keyToPool(key)
 	conn := pool.Get()
 	defer conn.Close()
@@ -270,5 +291,23 @@ func (r *Ring) DecrBy(key, num string) (int64, error) {
 		return -1, fmt.Errorf(
 			"error decrby key %s decrement %s: %v", key, num, err)
 	}
-	return value.(int64), err
+	data := value.(int64)
+
+	if expiry > 0 {
+		if _, err := conn.Do("EXPIRE", key, expiry); err != nil {
+			log.Printf("error expire key %s: %v", key, err)
+		}
+	}
+	return data, nil
+}
+
+func (r *Ring) Expire(key string, expiry int) (bool, error) {
+	pool := r.keyToPool(key)
+	conn := pool.Get()
+	defer conn.Close()
+
+	if _, err := conn.Do("EXPIRE", key, expiry); err != nil {
+		return false, fmt.Errorf("error expire key %s: %v", key, err)
+	}
+	return true, nil
 }

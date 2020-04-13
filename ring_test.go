@@ -81,10 +81,10 @@ func TestNewRingIncr(t *testing.T) {
 	defer r.Close()
 
 	var value int64
-	value, _ = r.Incr("aa")
+	value, _ = r.Incr("aa", 0)
 	t.Log(value)
-	// value, _ = r.IncrBy("aa", "3")
-	// t.Log(value)
+	value, _ = r.IncrBy("aa", "3", 10)
+	t.Log(value)
 }
 
 func TestNewRingDecr(t *testing.T) {
@@ -97,10 +97,24 @@ func TestNewRingDecr(t *testing.T) {
 	defer r.Close()
 
 	var value int64
-	// value, _ = r.Decr("aa")
-	// t.Log(value)
-	value, _ = r.DecrBy("aa", "3")
+	value, _ = r.Decr("aa", 60)
 	t.Log(value)
+	value, _ = r.DecrBy("aa", "3", 0)
+	t.Log(value)
+}
+
+func TestNewRingExpire(t *testing.T) {
+	r := NewRing(&RingOptions{
+		Addrs: []string{
+			"redis://127.0.0.1:6380/1",
+		},
+		Marshal: "plain",
+	})
+	defer r.Close()
+
+	value, _ := r.Decr("aa", 60)
+	t.Log(value)
+	_, _ = r.Expire("aa", 100)
 }
 
 func TestNewRingPanic(t *testing.T) {
